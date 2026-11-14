@@ -16,6 +16,9 @@ public class ClienteService {
     @Autowired
     private ClienteRepository clienteRepository;
 
+    @Autowired
+    private com.pedidos360.messaging.business.BusinessReferences references;
+
     public List<Cliente> getClientes() {
         return clienteRepository.findAll();
     }
@@ -32,6 +35,8 @@ public class ClienteService {
 
     public String deleteCliente(Long id) {
         Cliente cliente = getClienteById(id);
+        references.noReferences("pedidos", "clienteId", id);
+        references.noReferences("facturas", "clienteId", id);
         clienteRepository.delete(cliente);
         return "Cliente eliminado";
     }

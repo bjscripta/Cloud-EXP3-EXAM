@@ -16,6 +16,9 @@ public class InventarioService {
     @Autowired
     private InventarioRepository inventarioRepository;
 
+    @Autowired
+    private com.pedidos360.messaging.business.BusinessReferences references;
+
     public List<Inventario> getInventarios() {
         return inventarioRepository.findAll();
     }
@@ -34,6 +37,7 @@ public class InventarioService {
     }
 
     public Inventario saveInventario(Inventario inventario) {
+        references.get("productos", inventario.getProductoId());
         return inventarioRepository.save(inventario);
     }
 

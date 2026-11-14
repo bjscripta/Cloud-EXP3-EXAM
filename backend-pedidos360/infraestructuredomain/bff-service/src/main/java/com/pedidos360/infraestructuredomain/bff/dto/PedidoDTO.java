@@ -20,6 +20,16 @@ public class PedidoDTO {
     private float total;
     private String direccionEntrega;
 
+    private java.util.List<LineaDTO> lineas = new java.util.ArrayList<>();
+    private String referenciaExterna;
+    @Getter @Setter @NoArgsConstructor
+    public static class LineaDTO {
+        private Long productoId;
+        private int cantidad;
+        private String nombreProducto;
+        private Float precioUnitario;
+    }
+
     public enum Estado {
         PENDIENTE,
         CONFIRMADO,

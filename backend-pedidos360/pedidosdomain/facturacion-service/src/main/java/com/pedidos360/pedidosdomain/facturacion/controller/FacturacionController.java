@@ -46,9 +46,9 @@ public class FacturacionController {
 
         Facturacion existente = facturacionService.getFacturacionById(id);
 
-        existente.setPedidoId(facturacion.getPedidoId());
-        existente.setClienteId(facturacion.getClienteId());
-        existente.setMontoTotal(facturacion.getMontoTotal());
+
+
+
         existente.setEstadoPago(facturacion.getEstadoPago());
 
         return facturacionService.saveFacturacion(existente);

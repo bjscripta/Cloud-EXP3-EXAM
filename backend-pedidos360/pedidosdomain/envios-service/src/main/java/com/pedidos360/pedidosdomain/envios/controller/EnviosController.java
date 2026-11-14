@@ -42,7 +42,7 @@ public class EnviosController {
 
         Envios existente = enviosService.getEnvioById(id);
 
-        existente.setPedidoId(envio.getPedidoId());
+
         existente.setDireccionEntrega(envio.getDireccionEntrega());
         existente.setEstadoEnvio(envio.getEstadoEnvio());
         existente.setNumeroSeguimiento(envio.getNumeroSeguimiento());

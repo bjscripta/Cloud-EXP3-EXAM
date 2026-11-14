@@ -1,0 +1,78 @@
+<section class="panel" [attr.aria-busy]="loading() || busy()">
+  <header class="heading"><div><h1>Administración de datos</h1><p>Clientes, catálogo, inventario y seguimiento de pedidos vinculados.</p></div>
+    <div class="actions"><button type="button" (click)="refresh()" [disabled]="loading() || busy()">{{ loading() ? 'Actualizando…' : 'Actualizar' }}</button>
+      <button type="button" class="secondary" (click)="showDemo.set(!showDemo())" [disabled]="busy()">Datos de prueba</button></div>
+  </header>
+  @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+  @if (message()) { <p class="success" role="status">{{ message() }}</p> }
+  @if (busy()) { <p role="status">Guardando cambios…</p> }
+  @if (showDemo()) {
+    <section class="notice"><h2>Cargar ejemplos vinculados</h2><p>Completa hasta 5 clientes, 5 productos, 5 inventarios y 5 pedidos con sus facturas y envíos. Cuenta los registros existentes y no los sobrescribe ni los elimina. Los servicios de negocio y RabbitMQ deben estar disponibles.</p>
+      <label class="check"><input type="checkbox" [(ngModel)]="demoConfirmed" [disabled]="busy()"> Quiero agregar estos datos ficticios de prueba.</label>
+      <button type="button" (click)="seed()" [disabled]="!demoConfirmed || busy()">Cargar hasta 5 registros por servicio</button>
+    </section>
+  }
+  <nav class="services" aria-label="Servicios de negocio">@for (item of sections; track item.resource) {
+    <button type="button" (click)="choose(item.resource)" [disabled]="busy()" [attr.aria-pressed]="selected() === item.resource">
+      <strong>{{ item.label }}</strong><span>{{ data()[item.resource]?.available ? records(item.resource).length + ' registros' : (loading() ? 'Consultando…' : 'No disponible') }}</span>
+    </button>
+  }</nav>
+  <div class="heading"><h2>{{ section().label }}</h2>
+    @if (canCreate()) { <button type="button" (click)="open()" [disabled]="busy() || !data()[selected()]?.available">Nuevo registro</button> }
+  </div>
+  @if (data()[selected()]?.available === false) { <p class="error">{{ data()[selected()]?.message }}</p> }
+  @if (selected() === 'inventarios') { <p class="muted">El stock se administra por producto. Crear un pedido no descuenta inventario automáticamente.</p> }
+  @if (selected() === 'facturas' || selected() === 'envios') { <p class="muted">Se generan desde el pedido. Puedes editar el estado y los campos operativos conservando su relación.</p> }
+  @if (selected() === 'pedidos') { <p class="muted">El cliente, los productos y sus precios se fijan al crear el pedido. El total se calcula en el servidor. Después puedes modificar el estado y la dirección.</p> }
+  @if (!loading() && data()[selected()]?.available && rows().length === 0) { <p>Todavía no hay registros. Crea uno o carga los ejemplos de prueba.</p> }
+  @if (rows().length) {
+    <div class="scroll"><table><caption>{{ section().label }} registrados</caption><thead><tr><th>ID</th>@for (column of section().columns; track column.key) { <th>{{ column.label }}</th> }@if (selected() === 'pedidos') {<th>Factura / Envío</th>}<th>Acciones</th></tr></thead>
+      <tbody>@for (row of rows(); track row.id) { <tr><td>#{{ row.id }}</td>@for (column of section().columns; track column.key) {<td>{{ cell(row, column.key, column.relation) }}</td>}
+        @if (selected() === 'pedidos') {<td><span>Factura: {{ related('facturas', row.id) }}</span><br><span>Envío: {{ related('envios', row.id) }}</span></td>}
+        <td><div class="actions"><button type="button" class="secondary" (click)="open(row)" [disabled]="busy()">Editar</button><button type="button" class="danger" (click)="askDelete(row)" [disabled]="busy()">Eliminar</button></div></td>
+      </tr>}</tbody>
+    </table></div>
+  }
+  @if (deleting(); as row) {
+    <section class="notice danger-zone"><h2>Eliminar registro #{{ row.id }}</h2><p>Se eliminará este registro. El servidor bloqueará la operación si tiene dependencias que deben conservarse.</p>
+      <label class="check"><input type="checkbox" [(ngModel)]="deleteConfirmed" [disabled]="busy()"> Confirmo que quiero eliminarlo.</label>
+      <div class="actions"><button type="button" class="danger" (click)="remove()" [disabled]="!deleteConfirmed || busy()">Confirmar eliminación</button><button class="secondary" type="button" (click)="deleting.set(null)" [disabled]="busy()">Cancelar</button></div>
+    </section>
+  }
+  @if (editing()) {
+    <form #editForm="ngForm" (ngSubmit)="save()" class="editor"><h2>{{ draft.id ? 'Editar #' + draft.id : 'Nuevo registro' }} · {{ section().label }}</h2>
+      <fieldset [disabled]="busy()"><div class="fields">
+        @for (field of section().fields; track field.key) {
+          <label [class.check]="field.type === 'checkbox'">{{ field.label }}
+            @switch (field.type) {
+              @case ('relation') { <select [name]="field.key" [(ngModel)]="draft[field.key]" [required]="!!field.required" [disabled]="!!draft.id && !!field.lockedOnEdit" (ngModelChange)="field.key === 'clienteId' ? fillAddress() : null">
+                <option [ngValue]="null">Selecciona una opción</option>
+                @for (option of records(field.relation!); track option.id) { <option [ngValue]="option.id">{{ label(field.relation!, option.id) }}</option> }
+              </select> }
+              @case ('select') {<select [name]="field.key" [(ngModel)]="draft[field.key]" [required]="!!field.required">@for (option of field.options; track option) {<option [value]="option">{{ option }}</option>}</select>}
+              @case ('checkbox') {<input type="checkbox" [name]="field.key" [(ngModel)]="draft[field.key]">}
+              @case ('textarea') {<textarea [name]="field.key" [(ngModel)]="draft[field.key]" maxlength="1000"></textarea>}
+              @case ('number') {<input type="number" [name]="field.key" [(ngModel)]="draft[field.key]" [required]="!!field.required" [min]="field.min ?? 0" [step]="field.step ?? '1'">}
+              @default {<input [type]="field.type" [name]="field.key" [(ngModel)]="draft[field.key]" [required]="!!field.required" [maxlength]="field.key === 'email' ? 200 : 150">}
+            }
+          </label>
+        }
+      </div>
+      @if (selected() === 'pedidos' && !draft.id) {
+        <section><h3>Productos del pedido</h3>
+          @for (line of lines; track $index; let i = $index) {
+            <div class="order-line"><label>Producto<select [name]="'producto-' + i" [(ngModel)]="line.productoId" required><option [ngValue]="null">Selecciona un producto</option>@for (product of records('productos'); track product.id) { @if (product['activo']) {<option [ngValue]="product.id">{{ product['nombre'] }} · {{ product['precio'] }}</option>} }</select></label>
+              <label>Cantidad<input type="number" [name]="'cantidad-' + i" [(ngModel)]="line.cantidad" min="1" max="10000" step="1" required></label>
+              <button type="button" class="secondary" (click)="lines.splice(i, 1)" [disabled]="lines.length === 1">Quitar</button>
+            </div>
+          }
+          <button type="button" class="secondary" (click)="lines.push({productoId: null, cantidad: 1})" [disabled]="lines.length >= 100">Agregar producto</button>
+          <p><strong>Total estimado: {{ total() | number:'1.0-2' }}</strong>. El precio definitivo se obtiene del catálogo al guardar.</p>
+        </section>
+      }
+      @if (selected() === 'pedidos' && draft.id) {<p>Productos: {{ cell(draft, 'lineas') }} · Total histórico: {{ cell(draft, 'total') }}</p>}
+      <div class="actions"><button type="submit" [disabled]="editForm.invalid || busy() || (selected() === 'pedidos' && !draft.id && !validLines())">Guardar</button><button type="button" class="secondary" (click)="editing.set(false)" [disabled]="busy()">Cancelar</button></div>
+      </fieldset>
+    </form>
+  }
+</section>

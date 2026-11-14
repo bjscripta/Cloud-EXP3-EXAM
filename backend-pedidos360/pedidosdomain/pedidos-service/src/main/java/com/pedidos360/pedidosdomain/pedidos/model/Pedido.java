@@ -3,6 +3,7 @@ package com.pedidos360.pedidosdomain.pedidos.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.Getter;
+import jakarta.validation.constraints.*;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
@@ -18,7 +19,7 @@ public class Pedido {
     private int id;
 
     @Column(nullable = false)
-    private Long clienteId;
+    @NotNull @Positive private Long clienteId;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
@@ -31,7 +32,17 @@ public class Pedido {
     private float total = 0;
 
     @Column(nullable = false)
-    private String direccionEntrega;
+    @NotBlank private String direccionEntrega;
+
+    @jakarta.validation.Valid
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name="pedido_lineas", joinColumns=@JoinColumn(name="pedido_id"))
+    @OrderColumn(name="posicion")
+    private java.util.List<LineaPedido> lineas = new java.util.ArrayList<>();
+
+    @Column(unique=true)
+    @Size(max=100)
+    private String referenciaExterna;
 
     @PrePersist
     private void asignarFechaCreacion() {

@@ -21,6 +21,9 @@ public class FacturacionService {
     @Autowired
     private VentaKafkaPublisher ventaKafkaPublisher;
 
+    @Autowired
+    private com.pedidos360.messaging.business.BusinessReferences references;
+
     public List<Facturacion> getFacturaciones() {
         return facturacionRepository.findAll();
     }
@@ -39,6 +42,9 @@ public class FacturacionService {
     }
 
     public Facturacion saveFacturacion(Facturacion facturacion) {
+        var pedido = references.get("pedidos", facturacion.getPedidoId());
+        facturacion.setClienteId(pedido.path("clienteId").asLong());
+        facturacion.setMontoTotal(pedido.path("total").asDouble());
         boolean nueva = facturacion.getId() == null;
         Facturacion guardada = facturacionRepository.save(facturacion);
         if (nueva) {

@@ -2,6 +2,7 @@ package com.pedidos360.pedidosdomain.inventario.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import jakarta.validation.constraints.*;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
@@ -17,11 +18,11 @@ public class Inventario {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private Long productoId;
+    @NotNull @Positive private Long productoId;
 
     @Column(nullable = false)
-    private int cantidadDisponible = 0;
+    @Min(0) private int cantidadDisponible = 0;
 
     @Column(nullable = false)
-    private int stockMinimo = 0;
+    @Min(0) private int stockMinimo = 0;
 }

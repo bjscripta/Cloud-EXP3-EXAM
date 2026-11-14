@@ -2,6 +2,7 @@ package com.pedidos360.pedidosdomain.facturacion.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import jakarta.validation.constraints.*;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
@@ -16,15 +17,15 @@ public class Facturacion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long pedidoId;
+    @Column(nullable = false, unique = true)
+    @NotNull @Positive private Long pedidoId;
 
     @Column(nullable = false)
-    private Long clienteId;
+    @NotNull @Positive private Long clienteId;
 
     @Column(nullable = false)
     private double montoTotal = 0.0;
 
     @Column(nullable = false)
-    private String estadoPago = "PENDIENTE";
+    @Pattern(regexp="PENDIENTE|PAGADO|ANULADO") @NotBlank private String estadoPago = "PENDIENTE";
 }

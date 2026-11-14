@@ -46,7 +46,7 @@ public class InventarioController {
 
         Inventario existente = inventarioService.getInventarioById(id);
 
-        existente.setProductoId(inventario.getProductoId());
+
         existente.setCantidadDisponible(inventario.getCantidadDisponible());
         existente.setStockMinimo(inventario.getStockMinimo());
 

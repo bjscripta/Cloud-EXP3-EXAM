@@ -16,6 +16,9 @@ public class EnviosService {
     @Autowired
     private EnviosRepository enviosRepository;
 
+    @Autowired
+    private com.pedidos360.messaging.business.BusinessReferences references;
+
     public List<Envios> getEnvios() {
         return enviosRepository.findAll();
     }
@@ -34,7 +37,18 @@ public class EnviosService {
     }
 
     public Envios saveEnvio(Envios envio) {
+        references.get("pedidos", envio.getPedidoId());
         return enviosRepository.save(envio);
+    }
+
+    public void prepararPedido(com.pedidos360.messaging.PedidoCreadoEvent evento) {
+        if (enviosRepository.findByPedidoId(evento.pedidoId()).isPresent()) return;
+        Envios envio = new Envios();
+        envio.setPedidoId(evento.pedidoId());
+        envio.setDireccionEntrega(evento.direccionEntrega());
+        envio.setEstadoEnvio("EN_PREPARACION");
+        envio.setNumeroSeguimiento(java.util.UUID.randomUUID().toString());
+        saveEnvio(envio);
     }
 
     public String deleteEnvio(Long id) {

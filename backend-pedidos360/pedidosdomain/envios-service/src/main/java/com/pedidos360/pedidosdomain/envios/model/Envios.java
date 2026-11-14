@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
+import jakarta.validation.constraints.*;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
@@ -21,15 +22,15 @@ public class Envios {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long pedidoId;
+    @Column(nullable = false, unique = true)
+    @NotNull @Positive private Long pedidoId;
 
     @Column(nullable = false)
-    private String direccionEntrega;
+    @NotBlank private String direccionEntrega;
 
     @Column(nullable = false)
-    private String estadoEnvio = "EN_PREPARACION";
+    @Pattern(regexp="EN_PREPARACION|DESPACHADO|ENTREGADO|CANCELADO") @NotBlank private String estadoEnvio = "EN_PREPARACION";
 
     @Column(nullable = false)
-    private String numeroSeguimiento;
+    @NotBlank private String numeroSeguimiento;
 }

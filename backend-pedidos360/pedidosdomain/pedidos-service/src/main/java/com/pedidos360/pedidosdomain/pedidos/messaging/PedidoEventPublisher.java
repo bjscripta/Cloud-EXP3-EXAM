@@ -16,13 +16,13 @@ public class PedidoEventPublisher {
     private static final Logger log =
             LoggerFactory.getLogger(PedidoEventPublisher.class);
 
-    private final RabbitTemplate rabbitTemplate;
+    private final PedidoRabbitOutboxRepository outbox;
     private final ObjectMapper objectMapper;
 
     public PedidoEventPublisher(
-            RabbitTemplate rabbitTemplate,
+            PedidoRabbitOutboxRepository outbox,
             ObjectMapper objectMapper) {
-        this.rabbitTemplate = rabbitTemplate;
+        this.outbox = outbox;
         this.objectMapper = objectMapper;
     }
 
@@ -36,11 +36,11 @@ public class PedidoEventPublisher {
 
         try {
             String payload = objectMapper.writeValueAsString(evento);
-            rabbitTemplate.convertAndSend(
-                    RabbitTopology.EVENTS_EXCHANGE,
-                    RabbitTopology.PEDIDO_CREADO_ROUTING_KEY,
-                    payload);
-            log.info("Evento pedido.creado publicado para pedidoId={}",
+            PedidoRabbitOutbox pending = new PedidoRabbitOutbox();
+            pending.setPayload(payload);
+            pending.setNextAttemptAt(java.time.Instant.now());
+            outbox.save(pending);
+            log.info("Evento pedido.creado registrado en outbox para pedidoId={}",
                     pedido.getId());
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException(

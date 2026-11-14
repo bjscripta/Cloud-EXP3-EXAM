@@ -47,7 +47,7 @@ public class PedidoController {
 
         Pedido existente = pedidoService.getPedidoById(id);
 
-        existente.setClienteId(pedido.getClienteId());
+        // Cliente, líneas y total son históricos: se fijan al crear el pedido.
         existente.setEstado(pedido.getEstado());
         existente.setDireccionEntrega(pedido.getDireccionEntrega());
 

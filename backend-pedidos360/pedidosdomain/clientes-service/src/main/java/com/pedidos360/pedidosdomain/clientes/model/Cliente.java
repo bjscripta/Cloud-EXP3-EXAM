@@ -2,6 +2,7 @@ package com.pedidos360.pedidosdomain.clientes.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import jakarta.validation.constraints.*;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
@@ -17,10 +18,10 @@ public class Cliente {
     private Long id;
 
     @Column(nullable = false)
-    private String nombre;
+    @NotBlank @Size(max=150) private String nombre;
 
     @Column(nullable = false, unique = true)
-    private String email;
+    @NotBlank @Email @Size(max=200) private String email;
 
     private String telefono;
 

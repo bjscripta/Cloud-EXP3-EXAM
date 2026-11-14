@@ -2,6 +2,7 @@ package com.pedidos360.pedidosdomain.productos.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import jakarta.validation.constraints.*;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
@@ -17,14 +18,14 @@ public class Producto {
     private Long id;
 
     @Column(nullable = false)
-    private String nombre;
+    @NotBlank @Size(max=150) private String nombre;
 
     @Column(length = 1000)
     private String descripcion;
 
     @Column(nullable = false)
-    private Float precio;
+    @NotNull @DecimalMin("0.0") private Float precio;
 
     @Column(nullable = false)
-    private Boolean activo = true;
+    @NotNull private Boolean activo = true;
 }

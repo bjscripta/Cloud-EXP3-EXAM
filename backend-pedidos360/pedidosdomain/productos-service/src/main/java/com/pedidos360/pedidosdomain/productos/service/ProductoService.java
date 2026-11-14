@@ -16,6 +16,9 @@ public class ProductoService {
     @Autowired
     private ProductoRepository productoRepository;
 
+    @Autowired
+    private com.pedidos360.messaging.business.BusinessReferences references;
+
     public List<Producto> getProductos() {
         return productoRepository.findAll();
     }
@@ -32,6 +35,8 @@ public class ProductoService {
 
     public String deleteProducto(Long id) {
         Producto producto = getProductoById(id);
+        references.noReferences("inventarios", "productoId", id);
+        references.noProductOrders(id);
         productoRepository.delete(producto);
         return "Producto eliminado";
     }
