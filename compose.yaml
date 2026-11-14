@@ -1,0 +1,357 @@
+name: pedidos360-backend
+
+# Backend completo para desarrollo local. Angular se ejecuta con npm start.
+x-java: &java
+  restart: unless-stopped
+  init: true
+  stop_grace_period: 45s
+  environment: &java-env
+    SERVER_ADDRESS: 0.0.0.0
+    EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+    KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092
+    RABBITMQ_HOST: rabbitmq-1
+    RABBITMQ_PORT: "5672"
+    RABBITMQ_USER: admin
+    RABBITMQ_PASSWORD: admin123
+    APP_SERVICES_CLIENTES_URL: http://clientes-service:8081
+    APP_SERVICES_PRODUCTOS_URL: http://productos-service:8082
+    APP_SERVICES_INVENTARIOS_URL: http://inventario-service:8083
+    APP_SERVICES_PEDIDOS_URL: http://pedidos-service:8084
+    APP_SERVICES_FACTURAS_URL: http://facturacion-service:8085
+    APP_SERVICES_ENVIOS_URL: http://envios-service:8086
+    ANALITICA_SERVICE_URL: http://analitica-service:8088
+    KAFKA_ADMIN_SERVICE_URL: http://kafka-admin-service:8091
+
+x-build: &build
+  context: ./backend-pedidos360
+  dockerfile: Dockerfile
+  target: runtime
+
+services:
+  zookeeper:
+    extends:
+      file: ./kafka-cluster/compose.yaml
+      service: zookeeper
+
+  kafka-1:
+    extends:
+      file: ./kafka-cluster/compose.yaml
+      service: kafka-1
+
+  kafka-2:
+    extends:
+      file: ./kafka-cluster/compose.yaml
+      service: kafka-2
+
+  kafka-init:
+    extends:
+      file: ./kafka-cluster/compose.yaml
+      service: kafka-init
+
+  kafka-ui:
+    extends:
+      file: ./kafka-cluster/compose.yaml
+      service: kafka-ui
+
+  rabbitmq-1:
+    image: rabbitmq:3.13-management-alpine
+    hostname: rabbitmq-1
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+      RABBITMQ_ERLANG_COOKIE: pedidos360_cluster_cookie
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq_data_1:/var/lib/rabbitmq
+      - ./rabbitmq-cluster/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+
+  rabbitmq-2:
+    image: rabbitmq:3.13-management-alpine
+    hostname: rabbitmq-2
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+      RABBITMQ_ERLANG_COOKIE: pedidos360_cluster_cookie
+    ports:
+      - "127.0.0.1:5673:5672"
+      - "127.0.0.1:15673:15672"
+    volumes:
+      - rabbitmq_data_2:/var/lib/rabbitmq
+      - ./rabbitmq-cluster/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+    depends_on:
+      rabbitmq-1:
+        condition: service_healthy
+
+  eureka-server:
+    <<: *java
+    image: pedidos360/eureka-server:local
+    build:
+      <<: *build
+      args:
+        MODULE: infraestructuredomain/eureka-server
+    ports:
+      - "127.0.0.1:8761:8761"
+    environment:
+      <<: *java-env
+      HEALTHCHECK_URL: http://127.0.0.1:8761/
+      EUREKA_INSTANCE_HOSTNAME: eureka-server
+
+  clientes-service:
+    <<: *java
+    image: pedidos360/clientes-service:local
+    build:
+      <<: *build
+      args:
+        MODULE: pedidosdomain/clientes-service
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      <<: *java-env
+      HEALTHCHECK_URL: http://127.0.0.1:8081/clientes
+      SPRING_DATASOURCE_URL: "jdbc:h2:file:/app/data/database;DB_CLOSE_ON_EXIT=FALSE"
+    volumes:
+      - clientes_data:/app/data
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  productos-service:
+    <<: *java
+    image: pedidos360/productos-service:local
+    build:
+      <<: *build
+      args:
+        MODULE: pedidosdomain/productos-service
+    ports:
+      - "127.0.0.1:8082:8082"
+    environment:
+      <<: *java-env
+      HEALTHCHECK_URL: http://127.0.0.1:8082/productos
+      SPRING_DATASOURCE_URL: "jdbc:h2:file:/app/data/database;DB_CLOSE_ON_EXIT=FALSE"
+    volumes:
+      - productos_data:/app/data
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  inventario-service:
+    <<: *java
+    image: pedidos360/inventario-service:local
+    build:
+      <<: *build
+      args:
+        MODULE: pedidosdomain/inventario-service
+    ports:
+      - "127.0.0.1:8083:8083"
+    environment:
+      <<: *java-env
+      HEALTHCHECK_URL: http://127.0.0.1:8083/inventarios
+      SPRING_DATASOURCE_URL: "jdbc:h2:file:/app/data/database;DB_CLOSE_ON_EXIT=FALSE"
+    volumes:
+      - inventario_data:/app/data
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      productos-service:
+        condition: service_healthy
+
+  facturacion-service:
+    <<: *java
+    image: pedidos360/facturacion-service:local
+    build:
+      <<: *build
+      args:
+        MODULE: pedidosdomain/facturacion-service
+    ports:
+      - "127.0.0.1:8085:8085"
+    environment:
+      <<: *java-env
+      HEALTHCHECK_URL: http://127.0.0.1:8085/facturas
+      SPRING_DATASOURCE_URL: "jdbc:h2:file:/app/data/database;DB_CLOSE_ON_EXIT=FALSE"
+    volumes:
+      - facturacion_data:/app/data
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      rabbitmq-1:
+        condition: service_healthy
+      rabbitmq-2:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+
+  envios-service:
+    <<: *java
+    image: pedidos360/envios-service:local
+    build:
+      <<: *build
+      args:
+        MODULE: pedidosdomain/envios-service
+    ports:
+      - "127.0.0.1:8086:8086"
+    environment:
+      <<: *java-env
+      HEALTHCHECK_URL: http://127.0.0.1:8086/envios
+      SPRING_DATASOURCE_URL: "jdbc:h2:file:/app/data/database;DB_CLOSE_ON_EXIT=FALSE"
+    volumes:
+      - envios_data:/app/data
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      rabbitmq-1:
+        condition: service_healthy
+      rabbitmq-2:
+        condition: service_healthy
+
+  pedidos-service:
+    <<: *java
+    image: pedidos360/pedidos-service:local
+    build:
+      <<: *build
+      args:
+        MODULE: pedidosdomain/pedidos-service
+    ports:
+      - "127.0.0.1:8084:8084"
+    environment:
+      <<: *java-env
+      HEALTHCHECK_URL: http://127.0.0.1:8084/pedidos
+      SPRING_DATASOURCE_URL: "jdbc:h2:file:/app/data/database;DB_CLOSE_ON_EXIT=FALSE"
+    volumes:
+      - pedidos_data:/app/data
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      clientes-service:
+        condition: service_healthy
+      productos-service:
+        condition: service_healthy
+      facturacion-service:
+        condition: service_healthy
+      envios-service:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+
+  analitica-service:
+    <<: *java
+    image: pedidos360/analitica-service:local
+    build:
+      <<: *build
+      args:
+        MODULE: pedidosdomain/analitica-service
+    ports:
+      - "127.0.0.1:8088:8088"
+    environment:
+      <<: *java-env
+      HEALTHCHECK_URL: http://127.0.0.1:8088/api/analitica/resumen
+      SPRING_DATASOURCE_URL: "jdbc:h2:file:/app/data/database;DB_CLOSE_ON_EXIT=FALSE"
+    volumes:
+      - analitica_data:/app/data
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+  kafka-admin-service:
+    <<: *java
+    image: pedidos360/kafka-admin-service:local
+    build:
+      <<: *build
+      args:
+        MODULE: infraestructuredomain/kafka-admin-service
+    ports:
+      - "127.0.0.1:8091:8091"
+    environment:
+      <<: *java-env
+      HEALTHCHECK_URL: http://127.0.0.1:8091/api/kafka/topics
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+  rabbit-admin-service:
+    <<: *java
+    image: pedidos360/rabbit-admin-service:local
+    build:
+      <<: *build
+      args:
+        MODULE: infraestructuredomain/rabbit-admin-service
+    ports:
+      - "127.0.0.1:8092:8090"
+    environment:
+      <<: *java-env
+      HEALTHCHECK_URL: http://127.0.0.1:8090/actuator/health
+    depends_on:
+      rabbitmq-1:
+        condition: service_healthy
+      rabbitmq-2:
+        condition: service_healthy
+
+  bff-service:
+    <<: *java
+    image: pedidos360/bff-service:local
+    build:
+      <<: *build
+      args:
+        MODULE: infraestructuredomain/bff-service
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      <<: *java-env
+      HEALTHCHECK_URL: http://127.0.0.1:8080/api/analitica/resumen
+      # 401 confirma que el BFF arrancó y exige JWT; las APIs no se hacen públicas.
+      HEALTHCHECK_STATUS: "401"
+      ENABLE_DEMO_DATA: "true"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      clientes-service:
+        condition: service_healthy
+      productos-service:
+        condition: service_healthy
+      inventario-service:
+        condition: service_healthy
+      facturacion-service:
+        condition: service_healthy
+      envios-service:
+        condition: service_healthy
+      pedidos-service:
+        condition: service_healthy
+      analitica-service:
+        condition: service_healthy
+      kafka-admin-service:
+        condition: service_healthy
+      rabbit-admin-service:
+        condition: service_healthy
+
+# Volúmenes de esta instalación; no modifican las bases H2 del host ni los
+# volúmenes de los Compose separados. No usar down -v si se desea conservarlos.
+volumes:
+  zookeeper_data:
+  zookeeper_log:
+  kafka_data_1:
+  kafka_data_2:
+  rabbitmq_data_1:
+  rabbitmq_data_2:
+  clientes_data:
+  productos_data:
+  inventario_data:
+  facturacion_data:
+  envios_data:
+  pedidos_data:
+  analitica_data:
