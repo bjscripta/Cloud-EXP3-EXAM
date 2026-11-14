@@ -1,0 +1,16 @@
+<section class="panel" [attr.aria-busy]="cargando()">
+  <div class="section-heading"><div><h1>Analítica</h1><p>Actividad registrada a partir de eventos de pedidos y facturación.</p></div>
+    <button type="button" (click)="actualizar()" [disabled]="cargando()">{{ cargando() ? 'Actualizando…' : 'Actualizar' }}</button>
+  </div>
+  @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+  @if (resumen(); as datos) {
+    <div class="metrics">
+      <article><h2>Pedidos creados</h2><strong>{{ datos.pedidosCreados | number:'1.0-0' }}</strong></article>
+      <article><h2>Facturas registradas</h2><strong>{{ datos.facturasRegistradas | number:'1.0-0' }}</strong></article>
+      <article><h2>Monto facturado</h2><strong>{{ datos.montoFacturado | number:'1.0-2' }}</strong></article>
+    </div>
+    <p class="muted">Última consulta: {{ actualizado() | date:'dd/MM/yyyy HH:mm:ss' }}. Si ocurre un error, se conservan los últimos datos consultados.</p>
+    @if (datos.pedidosCreados === 0 && datos.facturasRegistradas === 0) { <p>Todavía no se han registrado eventos.</p> }
+    <p>El monto corresponde a facturas registradas, incluidos pagos pendientes. No representa dinero cobrado. Los indicadores reflejan eventos de creación; no descuentan eliminaciones ni recalculan modificaciones posteriores.</p>
+  } @else if (cargando()) { <p role="status">Consultando indicadores…</p> }
+</section>

@@ -20,5 +20,6 @@
         <module>bff-service</module>
         <module>eureka-server</module>
         <module>rabbit-admin-service</module>
+        <module>kafka-admin-service</module>
     </modules>
 </project>

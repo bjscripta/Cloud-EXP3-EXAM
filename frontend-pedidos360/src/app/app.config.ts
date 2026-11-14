@@ -1,10 +1,14 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import localeEs from '@angular/common/locales/es';
+import { LOCALE_ID, ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { MSAL_GUARD_CONFIG, MSAL_INSTANCE, MSAL_INTERCEPTOR_CONFIG, MsalBroadcastService, MsalGuard, MsalInterceptor, MsalService } from '@azure/msal-angular';
 import { routes } from './app.routes';
 import { msalGuardConfigFactory, msalInstanceFactory, msalInterceptorConfigFactory } from './auth-config';
+registerLocaleData(localeEs, 'es-CL');
 export const appConfig: ApplicationConfig = { providers: [
+  { provide: LOCALE_ID, useValue: 'es-CL' },
   provideBrowserGlobalErrorListeners(), provideZoneChangeDetection({ eventCoalescing: true }), provideRouter(routes), provideHttpClient(withInterceptorsFromDi()),
   { provide: MSAL_INSTANCE, useFactory: msalInstanceFactory },
   { provide: MSAL_GUARD_CONFIG, useFactory: msalGuardConfigFactory },

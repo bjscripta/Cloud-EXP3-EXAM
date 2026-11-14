@@ -1,0 +1,14 @@
+# Build artifacts and local databases
+**/target/
+**/data/
+**/node_modules/
+**/dist/
+**/.angular/
+*.log
+
+# Local credentials and environment overrides
+.env
+.env.*
+!.env.example
+*.pem
+*.key

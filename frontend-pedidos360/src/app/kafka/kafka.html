@@ -1,0 +1,71 @@
+<section class="panel" [attr.aria-busy]="cargando() || ocupado()">
+  <div class="section-heading"><div><h1>Administración Kafka</h1><p>Tópicos, configuración y grupos de consumidores.</p></div>
+    <button type="button" (click)="actualizar()" [disabled]="cargando() || ocupado()">{{ cargando() ? 'Actualizando…' : 'Actualizar' }}</button>
+  </div>
+  @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+  @if (mensaje()) { <p class="success" role="status">{{ mensaje() }}</p> }
+  @if (ocupado()) { <p role="status">Procesando operación…</p> }
+  <div class="columns">
+    <section><h2>Tópicos</h2>
+      @if (!cargando() && !error() && topicos().length === 0) { <p>No hay tópicos disponibles.</p> }
+      <ul class="choices">@for (name of topicos(); track name) {
+        <li><button type="button" [disabled]="ocupado()" [attr.aria-pressed]="topico()?.name === name" (click)="seleccionarTopico(name)">{{ name }}</button></li>
+      }</ul>
+    </section>
+    <section><h2>Crear tópico</h2>
+      <form #crearForm="ngForm" (ngSubmit)="crear()">
+        <fieldset [disabled]="ocupado()">
+          <label>Nombre<input name="nuevoNombre" [(ngModel)]="nuevo.name" required maxlength="249" pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{0,248}"></label>
+          <label>Particiones<input name="nuevasParticiones" type="number" [(ngModel)]="nuevo.partitions" required min="1" max="1000" step="1" pattern="[0-9]+"></label>
+          <label>Réplicas<input name="nuevasReplicas" type="number" [(ngModel)]="nuevo.replicationFactor" required min="1" max="10" step="1" pattern="[0-9]+"></label>
+          <label>Retención en milisegundos<input name="nuevaRetencion" type="number" [(ngModel)]="nuevo.retentionMs" required min="-1" step="1" pattern="-?[0-9]+"></label>
+          <p class="muted">604800000 equivale a 7 días. -1 conserva los eventos sin límite de tiempo. Las réplicas no pueden superar los brokers disponibles.</p>
+          <button type="submit" [disabled]="crearForm.invalid || ocupado()">Crear tópico</button>
+        </fieldset>
+      </form>
+    </section>
+  </div>
+  @if (cargandoTopico()) { <p role="status">Consultando tópico…</p> }
+  @if (topico(); as topic) {
+    <section class="detail"><h2>{{ topic.name }}</h2>
+      <div class="table-scroll"><table><caption>Distribución de particiones</caption><thead><tr><th>Partición</th><th>Líder</th><th>Réplicas</th><th>Réplicas sincronizadas</th></tr></thead>
+        <tbody>@for (p of topic.partitions; track p.partition) { <tr><td>{{ p.partition }}</td><td>{{ p.leader }}</td><td>{{ p.replicas.join(', ') }}</td><td>{{ p.isr.join(', ') }}</td></tr> }</tbody>
+      </table></div>
+      <div class="columns">
+        <form #configForm="ngForm" (ngSubmit)="guardarConfiguracion()"><h3>Configuración</h3>
+          <fieldset [disabled]="ocupado()">
+            <label>Retención en milisegundos<input name="retencion" type="number" [(ngModel)]="configuracion.retentionMs" required min="-1" step="1" pattern="-?[0-9]+"></label>
+            <label>Política de limpieza<select name="cleanup" [(ngModel)]="configuracion.cleanupPolicy" required><option value="delete">Eliminar por retención</option><option value="compact">Compactar por clave</option><option value="compact,delete">Compactar y eliminar</option></select></label>
+            <label>Mínimo de réplicas sincronizadas<input name="minIsr" type="number" [(ngModel)]="configuracion.minIsr" required min="1" max="10" step="1" pattern="[0-9]+"></label>
+            <p class="muted">Si el mínimo supera las réplicas disponibles, las escrituras que requieren confirmación de todas las réplicas se detienen.</p>
+            <button type="submit" [disabled]="configForm.invalid || ocupado()">Guardar configuración</button>
+          </fieldset>
+        </form>
+        <form #partForm="ngForm" (ngSubmit)="aumentarParticiones()"><h3>Aumentar particiones</h3>
+          <fieldset [disabled]="ocupado()">
+            <label>Total deseado<input name="totalParticiones" type="number" [(ngModel)]="totalParticiones" required [min]="topic.partitions.length + 1" max="1000" step="1" pattern="[0-9]+"></label>
+            <p>Las particiones no se pueden reducir. Aumentarlas puede cambiar la distribución y el orden de eventos de una misma clave.</p>
+            <button type="submit" [disabled]="partForm.invalid || ocupado()">Aumentar particiones</button>
+          </fieldset>
+        </form>
+      </div>
+      <form class="danger-zone" (ngSubmit)="eliminar()"><h3>Eliminar tópico</h3><p>Se eliminarán el tópico y sus mensajes. Esta acción no se puede deshacer.</p>
+        <label>Escribe {{ topic.name }} para confirmar<input name="confirmacion" [(ngModel)]="confirmarEliminar" autocomplete="off" [disabled]="ocupado()"></label>
+        <button class="danger" type="submit" [disabled]="confirmarEliminar !== topic.name || ocupado()">Eliminar tópico y mensajes</button>
+      </form>
+    </section>
+  }
+  <section class="detail"><h2>Grupos de consumidores</h2>
+    @if (!cargando() && !error() && grupos().length === 0) { <p>No hay grupos de consumidores registrados.</p> }
+    <ul class="choices">@for (g of grupos(); track g.groupId) { <li><button type="button" [disabled]="ocupado()" [attr.aria-pressed]="grupo()?.groupId === g.groupId" (click)="seleccionarGrupo(g.groupId)">{{ g.groupId }} · {{ g.state }}</button></li> }</ul>
+    @if (cargandoGrupo()) { <p role="status">Consultando grupo…</p> }
+    @if (grupo(); as g) {
+      <h3>{{ g.groupId }}</h3><p>Estado: {{ g.state }} · Consumidores: {{ g.members.length }}</p>
+      <div class="table-scroll"><table><caption>Offsets y retraso por partición</caption><thead><tr><th>Tópico</th><th>Partición</th><th>Confirmado</th><th>Final</th><th>Mensajes pendientes</th></tr></thead>
+        <tbody>@for (o of g.offsets; track o.topic + ':' + o.partition) { <tr><td>{{ o.topic }}</td><td>{{ o.partition }}</td><td>{{ o.committedOffset }}</td><td>{{ o.endOffset }}</td><td>{{ o.lag }}</td></tr> }</tbody>
+      </table></div>
+      @if (g.offsets.length === 0) { <p>Este grupo todavía no tiene offsets confirmados.</p> }
+      <ul>@for (m of g.members; track m.consumerId) { <li>{{ m.clientId }}: {{ m.partitions.join(', ') || 'Sin particiones asignadas' }}</li> }</ul>
+    }
+  </section>
+</section>

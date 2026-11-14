@@ -4,6 +4,7 @@ import com.pedidos360.pedidosdomain.pedidos.model.Pedido;
 import com.pedidos360.pedidosdomain.pedidos.messaging.PedidoEventPublisher;
 import com.pedidos360.pedidosdomain.pedidos.repository.PedidoRepository;
 import jakarta.transaction.Transactional;
+import com.pedidos360.pedidosdomain.pedidos.messaging.kafka.PedidoKafkaPublisher;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,9 @@ public class PedidoService {
 
     @Autowired
     private PedidoEventPublisher pedidoEventPublisher;
+
+    @Autowired
+    private PedidoKafkaPublisher pedidoKafkaPublisher;
 
     public List<Pedido> getPedidos() {
         return pedidoRepository.findAll();
@@ -38,6 +42,7 @@ public class PedidoService {
         boolean nuevo = pedido.getId() == 0;
         Pedido guardado = pedidoRepository.save(pedido);
         if (nuevo) {
+            pedidoKafkaPublisher.publish(guardado);
             pedidoEventPublisher.publicarPedidoCreado(guardado);
         }
         return guardado;

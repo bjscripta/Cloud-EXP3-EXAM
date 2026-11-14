@@ -8,5 +8,11 @@ export function msalGuardConfigFactory(): MsalGuardConfiguration {
   return { interactionType: InteractionType.Redirect, authRequest: { scopes: [environment.apiScope] }, loginFailedRoute: '/login' };
 }
 export function msalInterceptorConfigFactory(): MsalInterceptorConfiguration {
-  return { interactionType: InteractionType.Redirect, protectedResourceMap: new Map([[`${environment.apiBaseUrl}/api/*`, [environment.apiScope]]]) };
+  return { interactionType: InteractionType.Redirect, protectedResourceMap: new Map([[`${environment.apiBaseUrl}/api/*`, [
+    { httpMethod: 'GET', scopes: [environment.apiScope] },
+    { httpMethod: 'POST', scopes: [environment.apiWriteScope] },
+    { httpMethod: 'PUT', scopes: [environment.apiWriteScope] },
+    { httpMethod: 'PATCH', scopes: [environment.apiWriteScope] },
+    { httpMethod: 'DELETE', scopes: [environment.apiWriteScope] },
+  ]]]) };
 }

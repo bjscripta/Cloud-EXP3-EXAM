@@ -11,8 +11,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pedidos360.messaging.PedidoCreadoEvent;
 import com.pedidos360.messaging.RabbitTopology;
-import com.pedidos360.pedidosdomain.facturacion.model.Facturacion;
-import com.pedidos360.pedidosdomain.facturacion.repository.FacturacionRepository;
+import com.pedidos360.pedidosdomain.facturacion.service.FacturacionService;
 import com.rabbitmq.client.Channel;
 
 @Component
@@ -20,13 +19,13 @@ public class PedidoCreadoConsumer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PedidoCreadoConsumer.class);
 
-    private final FacturacionRepository facturacionRepository;
+    private final FacturacionService facturacionService;
     private final ObjectMapper objectMapper;
 
     public PedidoCreadoConsumer(
-            FacturacionRepository facturacionRepository,
+            FacturacionService facturacionService,
             ObjectMapper objectMapper) {
-        this.facturacionRepository = facturacionRepository;
+        this.facturacionService = facturacionService;
         this.objectMapper = objectMapper;
     }
 
@@ -53,14 +52,7 @@ public class PedidoCreadoConsumer {
     private PedidoCreadoEvent procesar(String contenido) throws IOException {
         PedidoCreadoEvent evento = objectMapper.readValue(contenido, PedidoCreadoEvent.class);
 
-        if (facturacionRepository.findByPedidoId(evento.pedidoId()).isEmpty()) {
-            Facturacion factura = new Facturacion();
-            factura.setPedidoId(evento.pedidoId());
-            factura.setClienteId(evento.clienteId());
-            factura.setMontoTotal(evento.total());
-            factura.setEstadoPago("PENDIENTE");
-            facturacionRepository.save(factura);
-        }
+        facturacionService.facturarPedido(evento);
         return evento;
     }
 }

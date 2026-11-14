@@ -25,6 +25,7 @@
         <module>productos-service</module>
         <module>facturacion-service</module>
         <module>envios-service</module>
+        <module>analitica-service</module>
     </modules>
 
     <properties>

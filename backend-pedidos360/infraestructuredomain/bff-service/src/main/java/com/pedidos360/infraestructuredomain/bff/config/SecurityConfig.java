@@ -88,6 +88,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/**")
                         .hasAuthority("SCOPE_Pedidos360.Write")
 
+                        .requestMatchers(HttpMethod.PATCH, "/api/**")
+                        .hasAuthority("SCOPE_Pedidos360.Write")
+
                         .requestMatchers(HttpMethod.DELETE, "/api/**")
                         .hasAuthority("SCOPE_Pedidos360.Write")
 
@@ -106,6 +109,7 @@ public class SecurityConfig {
                 "GET",
                 "POST",
                 "PUT",
+                "PATCH",
                 "DELETE",
                 "OPTIONS"));
         configuration.setAllowedHeaders(List.of(

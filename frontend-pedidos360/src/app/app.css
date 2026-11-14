@@ -2,4 +2,10 @@
 .topbar { display: flex; align-items: center; gap: 1rem; padding: 1rem 2rem; background: #14213d; color: white; }
 .brand { margin-right: auto; color: white; font-size: 1.25rem; font-weight: 700; text-decoration: none; }
 button { border: 0; border-radius: .5rem; padding: .65rem 1rem; cursor: pointer; }
-main { max-width: 900px; margin: 0 auto; padding: 3rem 1.25rem; }
+main { max-width: 1200px; margin: 0 auto; padding: 3rem 1.25rem; }
+
+.topbar { flex-wrap: wrap; }
+nav { display: flex; gap: .5rem; flex-wrap: wrap; }
+nav a { color: white; text-decoration: none; padding: .5rem; border-radius: .4rem; }
+nav a.active { background: #36517e; }
+@media (max-width: 700px) { .topbar { padding: 1rem; } nav { order: 3; width: 100%; } main { padding-top: 1.5rem; } }
