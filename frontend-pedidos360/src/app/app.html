@@ -1,0 +1,8 @@
+<header class="topbar">
+  <a class="brand" routerLink="/">Pedidos360</a>
+  @if (isAuthenticated()) {
+    <span>{{ accountName() }}</span>
+    <button type="button" (click)="logout()">Cerrar sesión</button>
+  }
+</header>
+<main><router-outlet /></main>
