@@ -22,6 +22,7 @@ x-java: &java
     APP_SERVICES_ENVIOS_URL: http://envios-service:8086
     ANALITICA_SERVICE_URL: http://analitica-service:8088
     KAFKA_ADMIN_SERVICE_URL: http://kafka-admin-service:8091
+    RABBIT_ADMIN_SERVICE_URL: http://rabbit-admin-service:8090
 
 x-build: &build
   context: ./backend-pedidos360
@@ -296,6 +297,8 @@ services:
     environment:
       <<: *java-env
       HEALTHCHECK_URL: http://127.0.0.1:8090/actuator/health
+      SERVER_PORT: "8090"
+      RABBITMQ_MANAGEMENT_URL: http://rabbitmq-1:15672
     depends_on:
       rabbitmq-1:
         condition: service_healthy

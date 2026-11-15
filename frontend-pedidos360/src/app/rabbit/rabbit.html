@@ -1,0 +1,68 @@
+<section class="panel" [attr.aria-busy]="loading() || busy()">
+  <div class="section-heading"><div><h1>Administración RabbitMQ</h1><p>Colas, exchanges y bindings del clúster.</p></div>
+    <button type="button" (click)="refresh()" [disabled]="loading() || busy()">{{ loading() ? 'Actualizando…' : 'Actualizar' }}</button>
+  </div>
+  @if (error()) {<p class="error" role="alert">{{ error() }}</p>}
+  @if (message()) {<p class="success" role="status">{{ message() }}</p>}
+  @if (busy()) {<p role="status">Procesando operación…</p>}
+  <p class="muted">Los recursos de pedidos, facturación, envíos y los recursos internos están protegidos. Usa nombres de prueba para administrar recursos nuevos. Eliminar una cola solo se permite si está vacía y sin consumidores.</p>
+  @if (confirmation(); as selected) {
+    <form class="danger-zone" (ngSubmit)="confirm()"><h2>{{ selected.kind === 'purge' ? 'Vaciar mensajes' : 'Confirmar eliminación' }}</h2>
+      <p>{{ selected.kind === 'purge' ? 'Esta acción borra definitivamente los mensajes de la cola. No elimina la cola.' : 'Esta acción elimina el recurso seleccionado. Para eliminar un exchange, quita primero sus bindings.' }}</p>
+      <label>Escribe {{ selected.name }} para confirmar<input name="confirmation" [(ngModel)]="confirmedName" autocomplete="off" [disabled]="busy()"></label>
+      <button type="submit" class="danger" [disabled]="confirmedName !== selected.name || busy()">Confirmar</button>
+      <button type="button" (click)="confirmation.set(null)" [disabled]="busy()">Cancelar</button>
+    </form>
+  }
+  <section class="detail"><h2>Colas</h2>
+    @if (loaded() && resources().queues.length === 0) {<p>No hay colas en este vhost.</p>}
+    <div class="table-scroll"><table><caption>Mensajes y consumidores por cola</caption><thead><tr><th>Nombre</th><th>Mensajes</th><th>Consumidores</th><th>Durable</th><th>Dead-letter exchange</th><th>Acciones</th></tr></thead>
+      <tbody>@for (q of resources().queues; track q.name) {
+        <tr><td>{{ q.name }}</td><td>{{ q.messages ?? 0 }}</td><td>{{ q.consumers ?? 0 }}</td><td>{{ q.durable ? 'Sí' : 'No' }}</td><td>{{ dlx(q) }}</td><td>
+          @if (!q.protectedResource) {
+            <button type="button" (click)="ask('purge', q.name)" [disabled]="busy()">Vaciar mensajes</button>
+            <button type="button" class="danger" (click)="ask('queue', q.name)" [disabled]="busy()">Eliminar cola</button>
+          } @else if (isDlq(q)) {<button type="button" class="danger" (click)="ask('purge', q.name, undefined, true)" [disabled]="busy()">Vaciar DLQ</button>}
+          @else {<span>Protegida</span>}
+        </td></tr>
+      }</tbody>
+    </table></div>
+    <form #queueForm="ngForm" (ngSubmit)="createQueue()"><h3>Crear cola de prueba</h3><fieldset [disabled]="busy()">
+      <label>Nombre<input name="queueName" [(ngModel)]="queue.name" required maxlength="128" pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}"></label>
+      <label><span><input type="checkbox" name="queueDurable" [(ngModel)]="queue.durable" style="width:auto"> Durable</span></label>
+      <label>Dead-letter exchange opcional<select name="queueDlx" [(ngModel)]="queue.deadLetterExchange"><option value="">Sin DLX</option>@for (e of customExchanges(); track e.name) {<option [value]="e.name">{{ e.name }}</option>}</select></label>
+      <label>Routing key de mensajes rechazados<input name="deadKey" [(ngModel)]="queue.deadLetterRoutingKey" maxlength="255" [disabled]="!queue.deadLetterExchange"></label>
+      <button type="submit" [disabled]="queueForm.invalid || busy()">Crear cola</button>
+    </fieldset></form>
+  </section>
+  <section class="detail"><h2>Exchanges</h2>
+    <div class="table-scroll"><table><caption>Exchanges de aplicación</caption><thead><tr><th>Nombre</th><th>Tipo</th><th>Durable</th><th>Acciones</th></tr></thead><tbody>
+      @for (e of exchanges(); track e.name) {<tr><td>{{ e.name }}</td><td>{{ e.type }}</td><td>{{ e.durable ? 'Sí' : 'No' }}</td><td>@if (e.protectedResource) {Protegido} @else {<button class="danger" type="button" (click)="ask('exchange', e.name)" [disabled]="busy()">Eliminar exchange</button>}</td></tr>}
+    </tbody></table></div>
+    <form #exchangeForm="ngForm" (ngSubmit)="createExchange()"><h3>Crear exchange de prueba</h3><fieldset [disabled]="busy()">
+      <label>Nombre<input name="exchangeName" [(ngModel)]="exchange.name" required maxlength="128" pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}"></label>
+      <label>Tipo<select name="exchangeType" [(ngModel)]="exchange.type" required><option value="direct">Direct</option><option value="topic">Topic</option><option value="fanout">Fanout</option></select></label>
+      <label><span><input type="checkbox" name="exchangeDurable" [(ngModel)]="exchange.durable" style="width:auto"> Durable</span></label>
+      <button type="submit" [disabled]="exchangeForm.invalid || busy()">Crear exchange</button>
+    </fieldset></form>
+  </section>
+  <section class="detail"><h2>Bindings</h2>
+    <div class="table-scroll"><table><caption>Vínculos entre exchanges y colas</caption><thead><tr><th>Exchange</th><th>Cola</th><th>Routing key</th><th>Acciones</th></tr></thead><tbody>
+      @for (b of bindings(); track b.source + ':' + b.destination + ':' + b.properties_key) {<tr><td>{{ b.source }}</td><td>{{ b.destination }}</td><td>{{ b.routing_key || '(vacía)' }}</td><td>@if (b.protectedResource) {Protegido} @else {<button class="danger" type="button" (click)="ask('binding', b.source + ' → ' + b.destination, b)" [disabled]="busy()">Eliminar binding</button>}</td></tr>}
+    </tbody></table></div>
+    <form #bindingForm="ngForm" (ngSubmit)="createBinding()"><h3>Crear binding de prueba</h3><fieldset [disabled]="busy()">
+      <label>Exchange<select name="bindingSource" [(ngModel)]="binding.source" required><option value="">Selecciona</option>@for (e of customExchanges(); track e.name) {<option [value]="e.name">{{ e.name }}</option>}</select></label>
+      <label>Cola<select name="bindingQueue" [(ngModel)]="binding.queue" required><option value="">Selecciona</option>@for (q of customQueues(); track q.name) {<option [value]="q.name">{{ q.name }}</option>}</select></label>
+      <label>Routing key<input name="bindingKey" [(ngModel)]="binding.routingKey" maxlength="255"></label>
+      <button type="submit" [disabled]="bindingForm.invalid || busy()">Crear binding</button>
+    </fieldset></form>
+  </section>
+  <section class="detail"><h2>Publicar mensaje de prueba</h2><p class="muted">Solo se publica en exchanges personalizados. Los contadores del panel RabbitMQ pueden tardar unos segundos en actualizarse.</p>
+    <form #publishForm="ngForm" (ngSubmit)="publish()"><fieldset [disabled]="busy()">
+      <label>Exchange<select name="testExchange" [(ngModel)]="test.exchange" required><option value="">Selecciona</option>@for (e of customExchanges(); track e.name) {<option [value]="e.name">{{ e.name }}</option>}</select></label>
+      <label>Routing key<input name="testKey" [(ngModel)]="test.routingKey" maxlength="255"></label>
+      <label>Mensaje<textarea name="testPayload" [(ngModel)]="test.payload" required maxlength="10000" rows="3"></textarea></label>
+      <button type="submit" [disabled]="publishForm.invalid || busy()">Publicar mensaje</button>
+    </fieldset></form>
+  </section>
+</section>

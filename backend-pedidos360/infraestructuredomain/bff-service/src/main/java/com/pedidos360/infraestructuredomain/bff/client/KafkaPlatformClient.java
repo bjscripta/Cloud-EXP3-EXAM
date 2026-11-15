@@ -13,13 +13,16 @@ import org.springframework.web.server.ResponseStatusException;
 public class KafkaPlatformClient {
     private final WebClient analytics;
     private final WebClient admin;
+    private final WebClient rabbit;
 
     public KafkaPlatformClient(
             @Value("${app.services.analitica-url}") String analyticsUrl,
-            @Value("${app.services.kafka-admin-url}") String adminUrl) {
+            @Value("${app.services.kafka-admin-url}") String adminUrl,
+            @Value("${app.services.rabbit-admin-url}") String rabbitUrl) {
         // Direcciones explícitas: estos servicios internos no usan Eureka.
         this.analytics = WebClient.builder().baseUrl(analyticsUrl).build();
         this.admin = WebClient.builder().baseUrl(adminUrl).build();
+        this.rabbit = WebClient.builder().baseUrl(rabbitUrl).build();
     }
 
     public ResponseEntity<String> resumen() {
@@ -28,6 +31,10 @@ public class KafkaPlatformClient {
 
     public ResponseEntity<String> kafka(HttpMethod method, JsonNode body, String... segments) {
         return exchange(admin, method, body, segments);
+    }
+
+    public ResponseEntity<String> rabbit(HttpMethod method, JsonNode body, String... segments) {
+        return exchange(rabbit, method, body, segments);
     }
 
     private ResponseEntity<String> exchange(WebClient client, HttpMethod method,

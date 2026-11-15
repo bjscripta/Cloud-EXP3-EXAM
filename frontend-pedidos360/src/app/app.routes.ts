@@ -7,6 +7,7 @@ export const routes: Routes = [
   { path: 'admin', loadComponent: () => import('./admin/admin').then(m => m.Admin), canActivate: [MsalGuard] },
   { path: 'analitica', loadComponent: () => import('./analitica/analitica').then(m => m.Analitica), canActivate: [MsalGuard] },
   { path: 'kafka', loadComponent: () => import('./kafka/kafka').then(m => m.Kafka), canActivate: [MsalGuard] },
+  { path: 'rabbit', loadComponent: () => import('./rabbit/rabbit').then(m => m.Rabbit), canActivate: [MsalGuard] },
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: '**', redirectTo: 'login' },
 ];

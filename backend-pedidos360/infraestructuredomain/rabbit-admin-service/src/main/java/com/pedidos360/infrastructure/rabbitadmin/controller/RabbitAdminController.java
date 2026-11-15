@@ -29,12 +29,12 @@ public class RabbitAdminController {
     }
 
     @GetMapping("/queues/{name}")
-    public QueueStatus queue(@PathVariable String name) {
+    public QueueStatus queue(@PathVariable("name") String name) {
         return rabbitManagementService.getQueue(name);
     }
 
     @DeleteMapping("/dlq/{name}/messages")
-    public Map<String, Object> purgeDlq(@PathVariable String name) {
+    public Map<String, Object> purgeDlq(@PathVariable("name") String name) {
         int purged = rabbitManagementService.purgeDlq(name);
         return Map.of("queue", name, "purgedMessages", purged);
     }
