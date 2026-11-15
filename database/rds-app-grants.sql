@@ -1,0 +1,9 @@
+-- Requiere que p360_app ya exista y que la sesión tenga permisos de GRANT.
+-- Solo se conceden permisos dentro de los siete schemas de la aplicación.
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES ON p360_clientes.* TO 'p360_app'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES ON p360_productos.* TO 'p360_app'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES ON p360_inventario.* TO 'p360_app'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES ON p360_pedidos.* TO 'p360_app'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES ON p360_facturacion.* TO 'p360_app'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES ON p360_envios.* TO 'p360_app'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES ON p360_analitica.* TO 'p360_app'@'%';

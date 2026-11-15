@@ -1,0 +1,99 @@
+# Uso: docker compose --env-file .env.cloud -f compose.yaml -f compose.cloud.yaml up -d --build
+# Antes, crear los siete schemas y generar certs/rds-truststore.p12.
+x-rds-environment: &rds-env
+  SPRING_PROFILES_ACTIVE: cloud
+  RDS_DB_USER: ${RDS_DB_USER:?Define RDS_DB_USER en .env.cloud}
+  RDS_DB_PASSWORD: ${RDS_DB_PASSWORD:?Define RDS_DB_PASSWORD en .env.cloud}
+  RDS_DDL_AUTO: ${RDS_DDL_AUTO:-update}
+
+services:
+  clientes-service:
+    environment:
+      <<: *rds-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_clientes?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+      RDS_JDBC_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_clientes?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+    volumes:
+      - type: bind
+        source: ./certs/rds-truststore.p12
+        target: /app/certs/rds-truststore.p12
+        read_only: true
+        bind:
+          create_host_path: false
+
+  productos-service:
+    environment:
+      <<: *rds-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_productos?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+      RDS_JDBC_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_productos?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+    volumes:
+      - type: bind
+        source: ./certs/rds-truststore.p12
+        target: /app/certs/rds-truststore.p12
+        read_only: true
+        bind:
+          create_host_path: false
+
+  inventario-service:
+    environment:
+      <<: *rds-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_inventario?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+      RDS_JDBC_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_inventario?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+    volumes:
+      - type: bind
+        source: ./certs/rds-truststore.p12
+        target: /app/certs/rds-truststore.p12
+        read_only: true
+        bind:
+          create_host_path: false
+
+  pedidos-service:
+    environment:
+      <<: *rds-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_pedidos?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+      RDS_JDBC_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_pedidos?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+    volumes:
+      - type: bind
+        source: ./certs/rds-truststore.p12
+        target: /app/certs/rds-truststore.p12
+        read_only: true
+        bind:
+          create_host_path: false
+
+  facturacion-service:
+    environment:
+      <<: *rds-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_facturacion?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+      RDS_JDBC_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_facturacion?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+    volumes:
+      - type: bind
+        source: ./certs/rds-truststore.p12
+        target: /app/certs/rds-truststore.p12
+        read_only: true
+        bind:
+          create_host_path: false
+
+  envios-service:
+    environment:
+      <<: *rds-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_envios?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+      RDS_JDBC_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_envios?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+    volumes:
+      - type: bind
+        source: ./certs/rds-truststore.p12
+        target: /app/certs/rds-truststore.p12
+        read_only: true
+        bind:
+          create_host_path: false
+
+  analitica-service:
+    environment:
+      <<: *rds-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_analitica?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+      RDS_JDBC_URL: "jdbc:mysql://${RDS_HOST:?Define RDS_HOST en .env.cloud}:${RDS_PORT:-3306}/p360_analitica?connectTimeout=10000&socketTimeout=30000&serverTimezone=UTC&characterEncoding=UTF-8"
+    volumes:
+      - type: bind
+        source: ./certs/rds-truststore.p12
+        target: /app/certs/rds-truststore.p12
+        read_only: true
+        bind:
+          create_host_path: false

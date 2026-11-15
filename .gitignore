@@ -12,3 +12,10 @@
 !.env.example
 *.pem
 *.key
+
+# Configuración privada y certificados generados para RDS
+.env.cloud
+certs/
+*.p12
+*.jks
+!.env.cloud.example
